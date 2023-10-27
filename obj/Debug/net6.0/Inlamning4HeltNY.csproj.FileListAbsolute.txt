@@ -1,0 +1,14 @@
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\bin\Debug\net6.0\Inlamning4HeltNY.exe
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\bin\Debug\net6.0\Inlamning4HeltNY.deps.json
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\bin\Debug\net6.0\Inlamning4HeltNY.runtimeconfig.json
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\bin\Debug\net6.0\Inlamning4HeltNY.dll
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\bin\Debug\net6.0\Inlamning4HeltNY.pdb
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\Inlamning4HeltNY.GeneratedMSBuildEditorConfig.editorconfig
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\Inlamning4HeltNY.AssemblyInfoInputs.cache
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\Inlamning4HeltNY.AssemblyInfo.cs
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\Inlamning4HeltNY.csproj.CoreCompileInputs.cache
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\Inlamning4HeltNY.dll
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\refint\Inlamning4HeltNY.dll
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\Inlamning4HeltNY.pdb
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\Inlamning4HeltNY.genruntimeconfig.cache
+D:\2023\Progamering\C#\Inlamning4\Inlamning4HeltNY\Inlamning4HeltNY\obj\Debug\net6.0\ref\Inlamning4HeltNY.dll
