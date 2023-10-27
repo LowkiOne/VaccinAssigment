@@ -109,17 +109,53 @@ namespace Vaccination
             return ageLimit;
         }
 
-
     }
     public class VaccinFilters
     {
         private List<VaccinPerson> vaccinPeople = new List<VaccinPerson>();
         private string vaccinPersonCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Vaccinations.csv";
+
+        private List<Person> convertToList = new List<Person>();
+
+        public List<VaccinPerson> VaccinPeopleList()
+        {
+            return vaccinPeople;
+        }
         public string[] CreateVaccinationOrder(string[] input, int doses, bool vaccinateChildren)
         {
-
+            FilterPeople(input);
             // Replace with your own code.
             return new string[0];
+        }
+
+        public void FilterPeople(string[] input)
+        {
+            List<string> peopleToFilter = input.ToList();
+
+            foreach (string person in peopleToFilter)
+            {
+                string[] entries = person.Split(',');
+
+                string personalNumber = entries[0];
+                string lastName = entries[1];
+                string firstName = entries[2];
+                int healthcareEmployee = int.Parse(entries[3]);
+                int riskGroup = int.Parse(entries[4]);
+                int infection = int.Parse(entries[5]);
+
+                var people = new Person
+                {
+                    PersonalNumber = personalNumber,
+                    LastName = lastName,
+                    FirstName = firstName,
+                    HealthcareEmployee = healthcareEmployee,
+                    RiskGroup = riskGroup,
+                    Infection = infection,
+                };
+                convertToList.Add(people);
+            }
+     
+            ReformPersonalNumber(convertToList);
         }
 
         public List<Person> ReformPersonalNumber(List<Person> people)
@@ -157,13 +193,45 @@ namespace Vaccination
 
                 updatePersonalNumber.Add(updatedPerson);
             }
+
+            OrderByAge(updatePersonalNumber);
+
             return updatePersonalNumber;
         }
         public List<Person> OrderByAge(List<Person> people)
         {
             List<Person> OrderAge = people.OrderBy(person => person.PersonalNumber).ToList();
 
+            HealthCareEmployeeFilter(OrderAge);
+
             return OrderAge;
+        }
+
+        public List<Person> HealthCareEmployeeFilter(List<Person> people)
+        {
+            //Först filter alla som är anställda inom vården
+            List<Person> result = people
+                .Where(people => people.HealthcareEmployee > 0).ToList();
+            
+            DosesPerPerson(result);
+            return result;
+        }
+
+        public void DosesPerPerson(List<Person> people)
+        {
+            int vaccinDoses = 2;
+
+            foreach (var person in people)
+            {
+                VaccinPerson updatedPerson = new VaccinPerson
+                {
+                    VPersonalNumber = person.PersonalNumber,
+                    VLastName = person.LastName,
+                    VFirstName = person.FirstName,
+                    VVaccinDose = vaccinDoses - person.Infection
+                };
+                vaccinPeople.Add(updatedPerson);
+            }
         }
     }
 }

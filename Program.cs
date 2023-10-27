@@ -16,11 +16,25 @@ namespace Vaccination
             
             vaccinInputs.AddPerson("198911251234", "Doe", "John", 1, 0, 1);
             vaccinInputs.AddPerson("7512031234", "Smith", "Jane", 0, 1, 0);
+            vaccinInputs.AddPerson("9011251111", "Ern", "Dan", 0, 0, 0);
+            vaccinInputs.AddToCSVInput();
 
-            //vaccinFilters.AddToCSVInput();
+
+            vaccinFilters.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimit());
+
+            List<VaccinPerson> vaccinPeople = vaccinFilters.VaccinPeopleList();
+
+            foreach (var person in vaccinPeople)
+            {
+                Console.WriteLine($"Personal Number: {person.VPersonalNumber}");
+                Console.WriteLine($"First Name: {person.VFirstName}");
+                Console.WriteLine($"Last Name: {person.VLastName}");
+                Console.WriteLine($"Doses: {person.VVaccinDose}");
+            }
+
 
             //DisplayCSVFileContents(vaccinFilters.ReadCSVInputFile());
-            DisplayReformedPersonalNumbers(vaccinFilters.ReformPersonalNumber(vaccinInputs.PeopleList()));
+            //DisplayReformedPersonalNumbers(vaccinFilters.ReformPersonalNumber(vaccinInputs.PeopleList()));
         }
         public static void DisplayReformedPersonalNumbers(List<Person> people)
         {
