@@ -7,6 +7,7 @@ namespace Vaccination
 {
     public class Program
     {
+        private static bool running = true;
         public static void Main()
         {
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -14,16 +15,16 @@ namespace Vaccination
             VaccinInputs vaccinInputs = new VaccinInputs();
             VaccinFilters vaccinFilters = new VaccinFilters();
             
-            vaccinInputs.AddPerson("198911251234", "Doe", "John", 1, 0, 1);
-            vaccinInputs.AddPerson("7512031234", "Smith", "Jane", 0, 1, 0);
-            vaccinInputs.AddPerson("9011251111", "Ern", "Dan", 0, 0, 0);
+            vaccinInputs.AddPerson("200610012341", "Doe", "John", 0, 1, 0);
+            vaccinInputs.AddPerson("200611011234", "Smith", "Jane", 0, 1, 1);
+            vaccinInputs.AddPerson("200611251111", "Ern", "Dan", 0, 0, 0);
             vaccinInputs.AddToCSVInput();
 
 
             vaccinFilters.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimit());
 
             List<VaccinPerson> vaccinPeople = vaccinFilters.VaccinPeopleList();
-
+ 
             foreach (var person in vaccinPeople)
             {
                 Console.WriteLine($"Personal Number: {person.VPersonalNumber}");
@@ -31,41 +32,96 @@ namespace Vaccination
                 Console.WriteLine($"Last Name: {person.VLastName}");
                 Console.WriteLine($"Doses: {person.VVaccinDose}");
             }
+             
+            Console.WriteLine(vaccinInputs.DosesAmount() - vaccinFilters.DosesUsed());
 
-
-            //DisplayCSVFileContents(vaccinFilters.ReadCSVInputFile());
-            //DisplayReformedPersonalNumbers(vaccinFilters.ReformPersonalNumber(vaccinInputs.PeopleList()));
         }
-        public static void DisplayReformedPersonalNumbers(List<Person> people)
+        
+        public static void CreatePerson()
         {
-            Console.WriteLine("Reformed Personal Numbers:");
-            foreach (var person in people)
-            {
-                Console.WriteLine($"Personal Number: {person.PersonalNumber}");
-                Console.WriteLine($"First Name: {person.FirstName}");
-                Console.WriteLine($"Last Name: {person.LastName}");
-                Console.WriteLine($"Healthcare Employee: {person.HealthcareEmployee}");
-                Console.WriteLine($"Risk Group: {person.RiskGroup}");
-                Console.WriteLine($"Infection: {person.Infection}");
-                Console.WriteLine(); // Add an empty line for separation
-            }
-        }
 
-        public static void DisplayCSVFileContents(string[] lines)
+        }
+        public static void VaccinAmount()
         {
-            if (lines.Length == 0)
-            {
-                Console.WriteLine("The CSV file is empty.");
-                return;
-            }
+            VaccinInputs vaccinInputs = new VaccinInputs();
 
-            Console.WriteLine("CSV File Contents:");
-            foreach (string line in lines)
-            {
-                Console.WriteLine(line);
-            }
+            Console.Write("Ändra antalet vaccindoser: ");
+            int vaccinAmount = int.Parse(Console.ReadLine());
+
+            vaccinInputs.ChangeDoseAmount(vaccinAmount);
+
+        }
+        public static void AgeLimit()
+        {
+            VaccinInputs vaccinInputs = new VaccinInputs();
+
+            int ageLimit = ShowOption("Sätt åldersgräns?");
+
+            vaccinInputs.ChangeAgeLimit(ageLimit);
+        }
+        public static void PriorityOrder()
+        {
+
+        }
+        public static void ShowPriorityOrder()
+        {
+
+        }
+        public static void IndataChange()
+        {
+
+        }
+        public static void OutdataChange()
+        {
+
+        }
+        public static void Exit()
+        {
+
         }
 
+        public static void MainMenu()
+        {
+            VaccinInputs vaccinInputs = new VaccinInputs();
+            VaccinFilters vaccinFilters = new VaccinFilters();
+
+            int vaccinResult = vaccinInputs.DosesAmount() - vaccinFilters.DosesUsed();
+
+            while (running)
+            {
+                Console.WriteLine("Huvudmeny\n");
+                Console.WriteLine($"Antal vaccindoser: {vaccinResult}");
+                Console.WriteLine($"Åldersgräns 18 år: {vaccinInputs.DisplayAgeLimit}");
+                Console.WriteLine($"Indata:");
+                Console.WriteLine($"Utdata: ");
+
+                int option = ShowMenu("\nAlternativ", new[]
+                {
+                    "Lägg till person",
+                    "Ändra antal vaccindoser",
+                    "Ändra åldersgräns",
+                    "Skapa prioritetsordning",
+                    "Visa prioritetsordning",
+                    "Ändra indata sökväg",
+                    "Ändra utdata sökväg",
+                    "Avsluta"
+                });
+                Console.Clear();
+
+                Action Navigate = option switch
+                {
+                    0 => new Action(CreatePerson),
+                    1 => new Action(VaccinAmount),
+                    2 => new Action(AgeLimit),
+                    3 => new Action(PriorityOrder),
+                    4 => new Action(ShowPriorityOrder),
+                    5 => new Action(IndataChange),
+                    6 => new Action(OutdataChange),
+                    7 => new Action(Exit),
+                };
+                Navigate.Invoke();
+            }
+        }
 
         // Create the lines that should be saved to a CSV file after creating the vaccination order.
         //
@@ -75,11 +131,13 @@ namespace Vaccination
         // doses: the number of vaccine doses available
         // vaccinateChildren: whether to vaccinate people younger than 18
 
+
         public static int ShowOption(string prompt)
         {
             List<string> option = new List<string>();
             option.Add("Nej");
             option.Add("Ja");
+
             return ShowMenu(prompt, option);
         }
         public static int ShowMenu(string prompt, IEnumerable<string> options)
