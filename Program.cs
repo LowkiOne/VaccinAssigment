@@ -12,30 +12,8 @@ namespace Vaccination
         {
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-            VaccinInputs vaccinInputs = new VaccinInputs();
-            FilterPerson personFilters = new FilterPerson();
-
             MainMenu();
-            
-            vaccinInputs.AddPerson("200310012341", "Doe", "John", 0, 1, 0);
-            vaccinInputs.AddPerson("200611011234", "Smith", "Jane", 0, 1, 1);
-            vaccinInputs.AddPerson("200611251111", "Ern", "Dan", 0, 0, 0);
-            vaccinInputs.AddToCSVInput();
 
-
-            personFilters.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimit());
-
-            List<VaccinPerson> vaccinPeople = personFilters.VaccinPeopleList();
- 
-            foreach (var person in vaccinPeople)
-            {
-                Console.WriteLine($"Personal Number: {person.VPersonalNumber}");
-                Console.WriteLine($"First Name: {person.VFirstName}");
-                Console.WriteLine($"Last Name: {person.VLastName}");
-                Console.WriteLine($"Doses: {person.VVaccinDose}");
-            }
-            
-            Console.WriteLine(vaccinInputs.DosesAmount() - personFilters.DosesUsed());
 
         }
         
@@ -182,15 +160,6 @@ namespace Vaccination
                 Navigate.Invoke();
             }
         }
-
-        // Create the lines that should be saved to a CSV file after creating the vaccination order.
-        //
-        // Parameters:
-        //
-        // input: the lines from a CSV file containing population information
-        // doses: the number of vaccine doses available
-        // vaccinateChildren: whether to vaccinate people younger than 18
-
         public static int ShowOption(string prompt)
         {
             List<string> option = new List<string>();

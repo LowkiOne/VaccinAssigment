@@ -37,12 +37,10 @@ namespace Vaccination
             };
             people.Add(person);
         }
-
         public List<Person> PeopleList()
         {
             return people;
         }
-
         public void AddToCSVInput()
         {
             var peopleList = PeopleList();
@@ -52,37 +50,14 @@ namespace Vaccination
             $"{person.PersonalNumber}, {person.LastName}, {person.FirstName}, {person.HealthcareEmployee}, {person.RiskGroup}, {person.Infection}")
             .ToArray();
 
-            File.WriteAllLines(inputCSVPath, csvLines);
+            File.AppendAllLines(inputCSVPath, csvLines);
         }
-       
         public string[] ReadCSVInputFile()
         {
             string[] lines = File.ReadAllLines(inputCSVPath);
 
-            foreach (string line in lines)
-            {
-                string[] entries = line.Split(',');
-
-                string personalNumber = entries[0];
-                string lastName = entries[1];
-                string firstName = entries[2];
-                int healthcareEmployee = int.Parse(entries[3]);
-                int riskGroup = int.Parse(entries[4]);
-                int infection = int.Parse(entries[5]);
-
-                people.Add(new Person
-                {
-                    PersonalNumber = personalNumber,
-                    LastName = lastName,
-                    FirstName = firstName,
-                    HealthcareEmployee = healthcareEmployee,
-                    RiskGroup = riskGroup,
-                    Infection = infection
-                });
-            }
             return lines;
         }
-
         public void ChangeDoseAmount(int doses)
         {
             vaccinAmount = doses;
@@ -93,7 +68,6 @@ namespace Vaccination
         {
             return vaccinAmount;
         }
-
         public void ChangeAgeLimit(int change)
         {
             if(change > 0)
@@ -122,17 +96,14 @@ namespace Vaccination
         {
             return ageLimit;
         }
-
         public void IndataChange(string input)
         {
             inputCSVPath = input;
         }
-
         public string HandleFile()
         {
             return inputCSVPath;
         }
-
         public void OutdataChange(string input)
         {
             FilterPerson vaccinFilters = new FilterPerson();
@@ -177,28 +148,49 @@ namespace Vaccination
 
             return 0;
         }
+        public void DosesToPeople(int doses)
+        {
+            List<int> applyDoses = new List<int>();
 
+            foreach(var person in vaccinPeople) 
+            {
+                if (doses > 1)
+                {
+                    doses--;
+
+                    int dose = person.VVaccinDose - 1;
+                    dosesUse += doses;
+                    applyDoses.Add(dose);
+                }
+            }
+            foreach(int second in applyDoses)
+            {
+                if(second > 0 && doses > 0)
+                {
+                    doses--;
+                    dosesUse += doses;
+                }
+            }
+        }
         public string[] CreateVaccinationOrder(string[] input, int doses, bool vaccinateChildren)
         {
             FilterPeople(input, vaccinateChildren);
-            
-            foreach(var person in vaccinPeople)
-            {
-                dosesUse += person.VVaccinDose;
-            }
-
             AddToCSVOutPut();
-            
-            return new string[0];
+            DosesToPeople(doses);
+
+            return ReadCSVOutPutFile();
         }
         public void FilterPeople(string[] input, bool ageLimit)
         {
+            ErrorHandle errorHandle = new ErrorHandle();
+
             List<string> peopleToFilter = input.ToList();
+            List<Person> personsToFilter = new List<Person>();
 
             foreach (string person in peopleToFilter)
             {
                 string[] entries = person.Split(',');
-
+                
                 string personalNumber = entries[0];
                 string lastName = entries[1];
                 string firstName = entries[2];
@@ -208,17 +200,30 @@ namespace Vaccination
 
                 var people = new Person
                 {
-                    PersonalNumber = personalNumber,
-                    LastName = lastName,
-                    FirstName = firstName,
-                    HealthcareEmployee = healthcareEmployee,
-                    RiskGroup = riskGroup,
-                    Infection = infection,
+                PersonalNumber = personalNumber,
+                LastName = lastName,
+                FirstName = firstName,
+                HealthcareEmployee = healthcareEmployee,
+                RiskGroup = riskGroup,
+                Infection = infection,
                 };
                 convertToList.Add(people);
+                var persons = new Person
+                {
+                    PersonalNumber = personalNumber
+                };
+                personsToFilter.Add(persons);
             }
-            
-            ReformPersonalNumber(convertToList, ageLimit);
+
+            try
+            {
+                errorHandle.CheckPersonalNumber(personsToFilter);
+                ReformPersonalNumber(convertToList, ageLimit);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Ett fel på personnummer {e.Message}");
+            }
         }
         public void ReformPersonalNumber(List<Person> people, bool ageLimit)
         {
@@ -250,7 +255,6 @@ namespace Vaccination
                     RiskGroup = person.RiskGroup,
                     Infection = person.Infection
                 };
-
                 updatePersonalNumber.Add(updatedPerson);
             }
 
@@ -277,7 +281,7 @@ namespace Vaccination
         {
             List<Person> result = people
                 .Where(person => person.HealthcareEmployee > 0).ToList();
-            
+
             DosesPerPerson(result);
         }
         public void PensionPeopleFilter(List<Person> people)
@@ -326,7 +330,6 @@ namespace Vaccination
                 .Where(person => BirthDate(person.PersonalNumber) <= 20051029).ToList();
             return result;
         }
-
         public string[] AddToCSVOutPut()
         {
             var peopleList = VaccinPeopleList();
@@ -348,68 +351,57 @@ namespace Vaccination
     }
     public class ErrorHandle
     {
-        public void CheckPersonalNumber()
+        public void CheckPersonalNumber(List<Person> people)
         {
-            VaccinInputs vaccinInputs = new VaccinInputs();
+            FilterPerson filterperson = new FilterPerson();
 
-            if (vaccinInputs.PeopleList().Count > 0)
+            foreach (var person in people)
             {
-                Person person = vaccinInputs.PeopleList()[0];
-
                 bool birthDateIsNumber = person.PersonalNumber.Take(6).All(char.IsDigit);
                 bool fullBirthDateIsNumber = person.PersonalNumber.Take(8).All(char.IsDigit);
                 bool lastFourisNumber = person.PersonalNumber.Length >= 4 &&
                     person.PersonalNumber.Substring(person.PersonalNumber.Length - 4).All(char.IsDigit);
                 char check = '-';
 
-                if (person.PersonalNumber.Length < 10)
+                int error = person.PersonalNumber.Length;
+
+                if (error < 10)
                 {
-                    Console.WriteLine($"{person.PersonalNumber} är för kort");
-                    return;
+                    throw new Exception($"{person.PersonalNumber} är för kort");
                 }
-                else if (person.PersonalNumber.Length > 13)
+                else if (error > 13)
                 {
-                    Console.WriteLine($"{person.PersonalNumber} är för långt");
-                    return;
+                    throw new Exception($"{person.PersonalNumber} är för långt");
                 }
 
-                if(person.PersonalNumber.Length == 11 || person.PersonalNumber.Length == 10)
+                if (error == 11 || error == 10)
                 {
-                    if(!birthDateIsNumber || !lastFourisNumber)
+                    if (!birthDateIsNumber || !lastFourisNumber)
                     {
-                        Console.WriteLine($"{person.PersonalNumber} är inte ett personnummer");
-                        return;
+                        throw new Exception($"{person.PersonalNumber} är inte ett personnummer");
                     }
-                    if(person.PersonalNumber.Length == 11)
+                    if (error == 11)
                     {
                         if (person.PersonalNumber.IndexOf(check) == -1)
                         {
-                            Console.WriteLine($"{person.PersonalNumber} är i fel format");
-                            return;
+                            throw new Exception($"{person.PersonalNumber} är i fel format");
                         }
                     }
                 }
-                else if(person.PersonalNumber.Length == 13 || person.PersonalNumber.Length == 12)
+                else if (error == 13 || error == 12)
                 {
                     if (!fullBirthDateIsNumber || !lastFourisNumber)
                     {
-                        Console.WriteLine($"{person.PersonalNumber} är inte ett personnummer");
-                        return;
+                        throw new Exception($"{person.PersonalNumber} är inte ett personnummer");
                     }
-                    if (person.PersonalNumber.Length == 13)
+                    if (error == 13)
                     {
                         if (person.PersonalNumber.IndexOf(check) == -1)
                         {
-                            Console.WriteLine($"{person.PersonalNumber} är i fel format");
-                            return;
+                            throw new Exception($"{person.PersonalNumber} är i fel format");
                         }
                     }
                 }
-            }
-            else
-            {
-                Console.WriteLine("Filen är tom");
-                return;
             }
         }
     }
