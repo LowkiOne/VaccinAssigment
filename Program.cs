@@ -13,17 +13,19 @@ namespace Vaccination
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
             VaccinInputs vaccinInputs = new VaccinInputs();
-            VaccinFilters vaccinFilters = new VaccinFilters();
+            FilterPerson personFilters = new FilterPerson();
+
+            MainMenu();
             
-            vaccinInputs.AddPerson("200610012341", "Doe", "John", 0, 1, 0);
+            vaccinInputs.AddPerson("200310012341", "Doe", "John", 0, 1, 0);
             vaccinInputs.AddPerson("200611011234", "Smith", "Jane", 0, 1, 1);
             vaccinInputs.AddPerson("200611251111", "Ern", "Dan", 0, 0, 0);
             vaccinInputs.AddToCSVInput();
 
 
-            vaccinFilters.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimit());
+            personFilters.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimit());
 
-            List<VaccinPerson> vaccinPeople = vaccinFilters.VaccinPeopleList();
+            List<VaccinPerson> vaccinPeople = personFilters.VaccinPeopleList();
  
             foreach (var person in vaccinPeople)
             {
@@ -32,14 +34,32 @@ namespace Vaccination
                 Console.WriteLine($"Last Name: {person.VLastName}");
                 Console.WriteLine($"Doses: {person.VVaccinDose}");
             }
-             
-            Console.WriteLine(vaccinInputs.DosesAmount() - vaccinFilters.DosesUsed());
+            
+            Console.WriteLine(vaccinInputs.DosesAmount() - personFilters.DosesUsed());
 
         }
         
         public static void CreatePerson()
         {
+            VaccinInputs vaccinInputs = new VaccinInputs();
+        
+            Console.Write("Personnummer: ");
+            string personalNumber = Console.ReadLine();
 
+            Console.Write("Förnamn: ");
+            string firstName = Console.ReadLine();
+
+            Console.Write("Efternamn: ");
+            string lastName = Console.ReadLine();
+
+            int healthcareEmployee = ShowOption("Arbetar i vård och omsorg?");
+
+            int riskgroup = ShowOption("Tillhör riskgrupp?");
+
+            int infection = ShowOption("Varit sjuk?");
+
+            vaccinInputs.AddPerson(personalNumber, lastName, firstName, healthcareEmployee, riskgroup, infection);
+            vaccinInputs.AddToCSVInput();
         }
         public static void VaccinAmount()
         {
@@ -49,7 +69,6 @@ namespace Vaccination
             int vaccinAmount = int.Parse(Console.ReadLine());
 
             vaccinInputs.ChangeDoseAmount(vaccinAmount);
-
         }
         public static void AgeLimit()
         {
@@ -61,7 +80,10 @@ namespace Vaccination
         }
         public static void PriorityOrder()
         {
+            VaccinInputs vaccinInputs = new VaccinInputs();
+            FilterPerson personFilter = new FilterPerson();
 
+            personFilter.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimit());
         }
         public static void ShowPriorityOrder()
         {
@@ -69,21 +91,59 @@ namespace Vaccination
         }
         public static void IndataChange()
         {
+            VaccinInputs vaccinInput = new VaccinInputs();
 
+            while (true)
+            {
+                Console.Write("Välj ny sökväg för Indata: ");
+                string changeFileInputPath = Console.ReadLine();
+
+                vaccinInput.IndataChange(changeFileInputPath);
+
+                if (File.Exists(vaccinInput.HandleFile()))
+                {
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Filen exiterar inte, testa igen!");
+                }
+            }
         }
         public static void OutdataChange()
         {
+            VaccinInputs vaccinInInput = new VaccinInputs();
+            FilterPerson vaccinFilters = new FilterPerson();
+            while (true)
+            {
+                Console.Write("Välj ny sökväg för Utdata: ");
+                string changeFileOutputPath = Console.ReadLine();
 
+                vaccinInInput.OutdataChange(changeFileOutputPath);
+                if(Directory.Exists(vaccinFilters.HandleOutFile()))
+                {
+                    Console.WriteLine($"Ny sökväg: {changeFileOutputPath}");
+                    if (!File.Exists(vaccinFilters.HandleOutFile()))
+                    {
+                        using (File.Create(vaccinFilters.HandleOutFile())) { }
+                    }
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Mappen existerar inte, testa igen!");
+                }
+            }
         }
         public static void Exit()
         {
-
+            running = false;
         }
 
         public static void MainMenu()
         {
             VaccinInputs vaccinInputs = new VaccinInputs();
-            VaccinFilters vaccinFilters = new VaccinFilters();
+            FilterPerson vaccinFilters = new FilterPerson();
 
             int vaccinResult = vaccinInputs.DosesAmount() - vaccinFilters.DosesUsed();
 
@@ -91,7 +151,7 @@ namespace Vaccination
             {
                 Console.WriteLine("Huvudmeny\n");
                 Console.WriteLine($"Antal vaccindoser: {vaccinResult}");
-                Console.WriteLine($"Åldersgräns 18 år: {vaccinInputs.DisplayAgeLimit}");
+                Console.WriteLine($"Åldersgräns 18 år: {vaccinInputs.DisplayAgeLimit()}");
                 Console.WriteLine($"Indata:");
                 Console.WriteLine($"Utdata: ");
 
@@ -130,7 +190,6 @@ namespace Vaccination
         // input: the lines from a CSV file containing population information
         // doses: the number of vaccine doses available
         // vaccinateChildren: whether to vaccinate people younger than 18
-
 
         public static int ShowOption(string prompt)
         {

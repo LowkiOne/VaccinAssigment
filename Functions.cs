@@ -4,13 +4,15 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
+using System.Net.Http.Headers;
 
 namespace Vaccination
 {
     public class VaccinInputs
     {
         private List<Person> people = new List<Person>();
-        private string personCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Test.csv";
+        private string inputCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Test.csv";
         private int vaccinAmount = 0;
         private bool ageLimit = false;
 
@@ -50,16 +52,12 @@ namespace Vaccination
             $"{person.PersonalNumber}, {person.LastName}, {person.FirstName}, {person.HealthcareEmployee}, {person.RiskGroup}, {person.Infection}")
             .ToArray();
 
-            File.WriteAllLines(personCSVPath, csvLines);
+            File.WriteAllLines(inputCSVPath, csvLines);
         }
+       
         public string[] ReadCSVInputFile()
         {
-            if(!File.Exists(personCSVPath))
-            {
-                using (File.Create(personCSVPath)) { }
-            }
-
-            string[] lines = File.ReadAllLines(personCSVPath);
+            string[] lines = File.ReadAllLines(inputCSVPath);
 
             foreach (string line in lines)
             {
@@ -112,10 +110,12 @@ namespace Vaccination
         public string DisplayAgeLimit()
         {
             string display = "Nej";
+
             if (ageLimit == true)
             {
                 display = "Ja";
             }
+
             return display;
         }
         public bool AgeLimit()
@@ -123,12 +123,32 @@ namespace Vaccination
             return ageLimit;
         }
 
+        public void IndataChange(string input)
+        {
+            inputCSVPath = input;
+        }
+
+        public string HandleFile()
+        {
+            return inputCSVPath;
+        }
+
+        public void OutdataChange(string input)
+        {
+            FilterPerson vaccinFilters = new FilterPerson();
+
+            string outdataChange = input;
+
+            Console.WriteLine($"Sökväg för utdata ändrad till: {input}");
+
+            vaccinFilters.OutdataChange(outdataChange);
+        }
     }
-    public class VaccinFilters
+    public class FilterPerson
     {
         private List<VaccinPerson> vaccinPeople = new List<VaccinPerson>();
-        int dosesUse;
-        private string vaccinPersonCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Vaccinations.csv";
+        private int dosesUse;
+        private string outdataCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Vaccinations.csv";
 
         private List<Person> convertToList = new List<Person>();
         
@@ -140,15 +160,24 @@ namespace Vaccination
         {
             return vaccinPeople;
         }
+        public void OutdataChange(string input)
+        {
+            outdataCSVPath = input;
+        }
+        public string HandleOutFile()
+        {
+            return outdataCSVPath;
+        }
         public int BirthDate(string personalNumber)
         {
-            if (int.TryParse(personalNumber.Substring(0, 8), out int BirthDate))
+            if (int.TryParse(personalNumber.Substring(0, 8), out int Birth))
             {
-                return BirthDate;
+                return Birth;
             }
 
             return 0;
         }
+
         public string[] CreateVaccinationOrder(string[] input, int doses, bool vaccinateChildren)
         {
             FilterPeople(input, vaccinateChildren);
@@ -157,6 +186,8 @@ namespace Vaccination
             {
                 dosesUse += person.VVaccinDose;
             }
+
+            AddToCSVOutPut();
             
             return new string[0];
         }
@@ -191,8 +222,6 @@ namespace Vaccination
         }
         public void ReformPersonalNumber(List<Person> people, bool ageLimit)
         {
-            // Ändrar personnummer till format 19901125-1111 efter varje filter
-            // Arbetar inom vården filter > äldre 65 filter > riskgrupp filter > alla andra
             List<Person> updatePersonalNumber = new List<Person>();
 
             foreach (var person in people)
@@ -240,7 +269,7 @@ namespace Vaccination
             List<Person> OrderAge = people.OrderBy(person => person.PersonalNumber).ToList();
 
             HealthCareEmployeeFilter(OrderAge);
-            OldPeopleFilter(OrderAge);
+            PensionPeopleFilter(OrderAge);
             RiskGroupFilter(OrderAge);
             OtherPeopleFilter(OrderAge);
         }
@@ -251,7 +280,7 @@ namespace Vaccination
             
             DosesPerPerson(result);
         }
-        public void OldPeopleFilter(List<Person> people)
+        public void PensionPeopleFilter(List<Person> people)
         {
             List<Person> result = people
                 .Where(person => BirthDate(person.PersonalNumber) <= 19581029 && person.HealthcareEmployee < 1).ToList();
@@ -298,7 +327,7 @@ namespace Vaccination
             return result;
         }
 
-        public void AddToCSVOutPut()
+        public string[] AddToCSVOutPut()
         {
             var peopleList = VaccinPeopleList();
 
@@ -307,35 +336,81 @@ namespace Vaccination
             $"{person.VPersonalNumber}, {person.VLastName}, {person.VFirstName}, {person.VVaccinDose}")
             .ToArray();
 
-            File.WriteAllLines(vaccinPersonCSVPath, csvLines);
+            File.WriteAllLines(outdataCSVPath, csvLines);
+            return csvLines;
         }
         public string[] ReadCSVOutPutFile()
         {
-            if (!File.Exists(vaccinPersonCSVPath))
-            {
-                using (File.Create(vaccinPersonCSVPath)) { }
-            }
+            string[] lines = File.ReadAllLines(outdataCSVPath);
 
-            string[] lines = File.ReadAllLines(vaccinPersonCSVPath);
-
-            foreach (string line in lines)
-            {
-                string[] entries = line.Split(',');
-
-                string personalNumber = entries[0];
-                string lastName = entries[1];
-                string firstName = entries[2];
-                int vaccindose = int.Parse(entries[3]);
-
-                vaccinPeople.Add(new VaccinPerson
-                {
-                    VPersonalNumber = personalNumber,
-                    VLastName = lastName,
-                    VFirstName = firstName,
-                    VVaccinDose = vaccindose
-                });
-            }
             return lines;
+        }
+    }
+    public class ErrorHandle
+    {
+        public void CheckPersonalNumber()
+        {
+            VaccinInputs vaccinInputs = new VaccinInputs();
+
+            if (vaccinInputs.PeopleList().Count > 0)
+            {
+                Person person = vaccinInputs.PeopleList()[0];
+
+                bool birthDateIsNumber = person.PersonalNumber.Take(6).All(char.IsDigit);
+                bool fullBirthDateIsNumber = person.PersonalNumber.Take(8).All(char.IsDigit);
+                bool lastFourisNumber = person.PersonalNumber.Length >= 4 &&
+                    person.PersonalNumber.Substring(person.PersonalNumber.Length - 4).All(char.IsDigit);
+                char check = '-';
+
+                if (person.PersonalNumber.Length < 10)
+                {
+                    Console.WriteLine($"{person.PersonalNumber} är för kort");
+                    return;
+                }
+                else if (person.PersonalNumber.Length > 13)
+                {
+                    Console.WriteLine($"{person.PersonalNumber} är för långt");
+                    return;
+                }
+
+                if(person.PersonalNumber.Length == 11 || person.PersonalNumber.Length == 10)
+                {
+                    if(!birthDateIsNumber || !lastFourisNumber)
+                    {
+                        Console.WriteLine($"{person.PersonalNumber} är inte ett personnummer");
+                        return;
+                    }
+                    if(person.PersonalNumber.Length == 11)
+                    {
+                        if (person.PersonalNumber.IndexOf(check) == -1)
+                        {
+                            Console.WriteLine($"{person.PersonalNumber} är i fel format");
+                            return;
+                        }
+                    }
+                }
+                else if(person.PersonalNumber.Length == 13 || person.PersonalNumber.Length == 12)
+                {
+                    if (!fullBirthDateIsNumber || !lastFourisNumber)
+                    {
+                        Console.WriteLine($"{person.PersonalNumber} är inte ett personnummer");
+                        return;
+                    }
+                    if (person.PersonalNumber.Length == 13)
+                    {
+                        if (person.PersonalNumber.IndexOf(check) == -1)
+                        {
+                            Console.WriteLine($"{person.PersonalNumber} är i fel format");
+                            return;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Filen är tom");
+                return;
+            }
         }
     }
 }
