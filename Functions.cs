@@ -12,72 +12,35 @@ namespace Vaccination
     public class VaccinInputs
     {
         private List<Person> people = new List<Person>();
+        private static List<bool> ageLimit = new List<bool>{false};
+        private static List<int> vaccinAmounts = new List<int>{0};
+
         private string inputCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Test.csv";
-        private int vaccinAmount = 0;
-        private bool ageLimit = false;
-
-        public void AddPerson
-            (
-            string personalNumber,
-            string lastName,
-            string firstName,
-            int healthcareEmployee,
-            int riskGroup,
-            int infection
-            )
+        public int DosesAmount()
         {
-            Person person = new Person
-            {
-                PersonalNumber = personalNumber,
-                LastName = lastName,
-                FirstName = firstName,
-                HealthcareEmployee = healthcareEmployee,
-                RiskGroup = riskGroup,
-                Infection = infection
-            };
-            people.Add(person);
-        }
-        public List<Person> PeopleList()
-        {
-            return people;
-        }
-        public void AddToCSVInput()
-        {
-            var peopleList = PeopleList();
+            FilterPerson filterPerson = new FilterPerson();
+            int result = vaccinAmounts[0] - filterPerson.DosesUsed();
 
-            string[] csvLines =
-            peopleList.Select(person => 
-            $"{person.PersonalNumber}, {person.LastName}, {person.FirstName}, {person.HealthcareEmployee}, {person.RiskGroup}, {person.Infection}")
-            .ToArray();
-
-            File.AppendAllLines(inputCSVPath, csvLines);
-        }
-        public string[] ReadCSVInputFile()
-        {
-            string[] lines = File.ReadAllLines(inputCSVPath);
-
-            return lines;
+            return result;
         }
         public void ChangeDoseAmount(int doses)
         {
-            vaccinAmount = doses;
+            vaccinAmounts[0] += doses;
 
             Console.WriteLine($"Du har lagg till: {doses} doser");
         }
-        public int DosesAmount()
-        {
-            return vaccinAmount;
-        }
         public void ChangeAgeLimit(int change)
         {
-            if(change > 0)
+            if (change > 0)
             {
-                ageLimit = true;
+                ageLimit[0] = true;
+
                 Console.WriteLine("Du har tagit bort åldergränsen");
             }
-            else 
-            { 
-                ageLimit = false;
+            else
+            {
+                ageLimit[0] = false;
+
                 Console.WriteLine("Du har satt en åldergräns");
             }
         }
@@ -85,17 +48,32 @@ namespace Vaccination
         {
             string display = "Nej";
 
-            if (ageLimit == true)
+            if (ageLimit[0] == true)
             {
                 display = "Ja";
+            }
+            else
+            {
+                return display;
             }
 
             return display;
         }
-        public bool AgeLimit()
+        public bool AgeLimitReturn()
         {
-            return ageLimit;
+            return ageLimit[0];
         }
+        public List<Person> PeopleList()
+        {
+            return people;
+        }
+        public string[] ReadCSVInputFile()
+        {
+            string[] lines = File.ReadAllLines(inputCSVPath);
+
+            return lines;
+        }
+ 
         public void IndataChange(string input)
         {
             inputCSVPath = input;
@@ -118,15 +96,11 @@ namespace Vaccination
     public class FilterPerson
     {
         private List<VaccinPerson> vaccinPeople = new List<VaccinPerson>();
-        private int dosesUse;
         private string outdataCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Vaccinations.csv";
-
+        private static List<int> dosesUse = new List<int> {0};
         private List<Person> convertToList = new List<Person>();
         
-        public int DosesUsed()
-        {
-            return dosesUse;
-        }
+
         public List<VaccinPerson> VaccinPeopleList()
         {
             return vaccinPeople;
@@ -139,46 +113,32 @@ namespace Vaccination
         {
             return outdataCSVPath;
         }
-        public int BirthDate(string personalNumber)
-        {
-            if (int.TryParse(personalNumber.Substring(0, 8), out int Birth))
-            {
-                return Birth;
-            }
-
-            return 0;
-        }
-        public void DosesToPeople(int doses)
-        {
-            List<int> applyDoses = new List<int>();
-
-            foreach(var person in vaccinPeople) 
-            {
-                if (doses > 1)
-                {
-                    doses--;
-
-                    int dose = person.VVaccinDose - 1;
-                    dosesUse += doses;
-                    applyDoses.Add(dose);
-                }
-            }
-            foreach(int second in applyDoses)
-            {
-                if(second > 0 && doses > 0)
-                {
-                    doses--;
-                    dosesUse += doses;
-                }
-            }
-        }
+       
         public string[] CreateVaccinationOrder(string[] input, int doses, bool vaccinateChildren)
         {
+            
             FilterPeople(input, vaccinateChildren);
-            AddToCSVOutPut();
+            WriteToCSVOutPut();
             DosesToPeople(doses);
 
             return ReadCSVOutPutFile();
+        }
+        public int BirthDate(string personalNumber)
+        {
+            DateTime today = DateTime.Today;
+
+            int year = int.Parse(personalNumber.Substring(0, 4));
+            int month = int.Parse(personalNumber.Substring(4, 2));
+            int day = int.Parse(personalNumber.Substring(6, 2));
+            
+            DateTime birthDate = new DateTime(year, month, day);
+            int result = today.Year - birthDate.Year;
+            if(birthDate > today.AddYears(-result))
+            {
+                result--;
+            }
+
+            return result;
         }
         public void FilterPeople(string[] input, bool ageLimit)
         {
@@ -220,10 +180,16 @@ namespace Vaccination
                 errorHandle.CheckPersonalNumber(personsToFilter);
                 ReformPersonalNumber(convertToList, ageLimit);
             }
-            catch (Exception e)
+            catch (Exception pNumber)
             {
-                Console.WriteLine($"Ett fel på personnummer {e.Message}");
+                Console.WriteLine($"Ett fel på personnummer {pNumber.Message}");
             }
+        }
+        public List<Person> KidsPeopleFilter(List<Person> people)
+        {
+            List<Person> result = people
+                .Where(person => BirthDate(person.PersonalNumber) >= 18).ToList();
+            return result;
         }
         public void ReformPersonalNumber(List<Person> people, bool ageLimit)
         {
@@ -287,7 +253,7 @@ namespace Vaccination
         public void PensionPeopleFilter(List<Person> people)
         {
             List<Person> result = people
-                .Where(person => BirthDate(person.PersonalNumber) <= 19581029 && person.HealthcareEmployee < 1).ToList();
+                .Where(person => BirthDate(person.PersonalNumber) >= 65 && person.HealthcareEmployee < 1).ToList();
 
             DosesPerPerson(result);
         }
@@ -295,7 +261,7 @@ namespace Vaccination
         {
             List<Person> result = people
                 .Where(person => person.RiskGroup > 0 &&
-                person.HealthcareEmployee < 1 && BirthDate(person.PersonalNumber) >= 19581029).ToList();
+                person.HealthcareEmployee < 1 && BirthDate(person.PersonalNumber) >= 65).ToList();
 
             DosesPerPerson(result);
         }
@@ -303,7 +269,7 @@ namespace Vaccination
         {
             List<Person> result = people
                 .Where(person => person.HealthcareEmployee < 1 &&
-                BirthDate(person.PersonalNumber) >= 19581029 &&
+                BirthDate(person.PersonalNumber) >= 65 &&
                 person.RiskGroup < 1).ToList();
 
             DosesPerPerson(result);
@@ -324,13 +290,8 @@ namespace Vaccination
                 vaccinPeople.Add(updatedPerson);
             }
         }
-        public List<Person> KidsPeopleFilter(List<Person> people)
-        {
-            List<Person> result = people
-                .Where(person => BirthDate(person.PersonalNumber) <= 20051029).ToList();
-            return result;
-        }
-        public string[] AddToCSVOutPut()
+
+        public string[] WriteToCSVOutPut()
         {
             var peopleList = VaccinPeopleList();
 
@@ -347,6 +308,30 @@ namespace Vaccination
             string[] lines = File.ReadAllLines(outdataCSVPath);
 
             return lines;
+        }
+
+        public void DosesToPeople(int doses)
+        {
+            foreach (var person in vaccinPeople)
+            {
+                if (doses > 1 && person.VVaccinDose > 0)
+                {
+                    doses--;
+                    dosesUse[0] += 1;
+                }
+            }
+            foreach (var second in vaccinPeople)
+            {
+                if (second.VVaccinDose > 1 && doses > 0)
+                {
+                    doses--;
+                    dosesUse[0] += 1;
+                }
+            }
+        }
+        public int DosesUsed()
+        {
+            return dosesUse[0];
         }
     }
     public class ErrorHandle

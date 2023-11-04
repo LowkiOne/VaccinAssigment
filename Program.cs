@@ -8,37 +8,14 @@ namespace Vaccination
     public class Program
     {
         private static bool running = true;
+
         public static void Main()
         {
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
             MainMenu();
-
-
         }
         
-        public static void CreatePerson()
-        {
-            VaccinInputs vaccinInputs = new VaccinInputs();
-        
-            Console.Write("Personnummer: ");
-            string personalNumber = Console.ReadLine();
-
-            Console.Write("Förnamn: ");
-            string firstName = Console.ReadLine();
-
-            Console.Write("Efternamn: ");
-            string lastName = Console.ReadLine();
-
-            int healthcareEmployee = ShowOption("Arbetar i vård och omsorg?");
-
-            int riskgroup = ShowOption("Tillhör riskgrupp?");
-
-            int infection = ShowOption("Varit sjuk?");
-
-            vaccinInputs.AddPerson(personalNumber, lastName, firstName, healthcareEmployee, riskgroup, infection);
-            vaccinInputs.AddToCSVInput();
-        }
         public static void VaccinAmount()
         {
             VaccinInputs vaccinInputs = new VaccinInputs();
@@ -46,26 +23,28 @@ namespace Vaccination
             Console.Write("Ändra antalet vaccindoser: ");
             int vaccinAmount = int.Parse(Console.ReadLine());
 
+            Console.Clear();
+
             vaccinInputs.ChangeDoseAmount(vaccinAmount);
+            vaccinInputs.AgeLimitReturn();
         }
         public static void AgeLimit()
         {
             VaccinInputs vaccinInputs = new VaccinInputs();
 
-            int ageLimit = ShowOption("Sätt åldersgräns?");
+            int ageLimit = ShowOption("Ta bort åldergräns?");
+
+            Console.Clear();
 
             vaccinInputs.ChangeAgeLimit(ageLimit);
+            vaccinInputs.AgeLimitReturn();
         }
         public static void PriorityOrder()
         {
             VaccinInputs vaccinInputs = new VaccinInputs();
             FilterPerson personFilter = new FilterPerson();
 
-            personFilter.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimit());
-        }
-        public static void ShowPriorityOrder()
-        {
-
+            personFilter.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimitReturn());
         }
         public static void IndataChange()
         {
@@ -120,26 +99,21 @@ namespace Vaccination
 
         public static void MainMenu()
         {
-            VaccinInputs vaccinInputs = new VaccinInputs();
-            FilterPerson vaccinFilters = new FilterPerson();
-
-            int vaccinResult = vaccinInputs.DosesAmount() - vaccinFilters.DosesUsed();
-
             while (running)
             {
+                VaccinInputs vaccinInputs = new VaccinInputs();
+
                 Console.WriteLine("Huvudmeny\n");
-                Console.WriteLine($"Antal vaccindoser: {vaccinResult}");
+                Console.WriteLine($"Antal vaccindoser: {vaccinInputs.DosesAmount()}");
                 Console.WriteLine($"Åldersgräns 18 år: {vaccinInputs.DisplayAgeLimit()}");
-                Console.WriteLine($"Indata:");
+                Console.WriteLine($"Indata: ");
                 Console.WriteLine($"Utdata: ");
 
                 int option = ShowMenu("\nAlternativ", new[]
                 {
-                    "Lägg till person",
                     "Ändra antal vaccindoser",
                     "Ändra åldersgräns",
                     "Skapa prioritetsordning",
-                    "Visa prioritetsordning",
                     "Ändra indata sökväg",
                     "Ändra utdata sökväg",
                     "Avsluta"
@@ -148,14 +122,12 @@ namespace Vaccination
 
                 Action Navigate = option switch
                 {
-                    0 => new Action(CreatePerson),
-                    1 => new Action(VaccinAmount),
-                    2 => new Action(AgeLimit),
-                    3 => new Action(PriorityOrder),
-                    4 => new Action(ShowPriorityOrder),
-                    5 => new Action(IndataChange),
-                    6 => new Action(OutdataChange),
-                    7 => new Action(Exit),
+                    0 => new Action(VaccinAmount),
+                    1 => new Action(AgeLimit),
+                    2 => new Action(PriorityOrder),
+                    3 => new Action(IndataChange),
+                    4 => new Action(OutdataChange),
+                    5 => new Action(Exit),
                 };
                 Navigate.Invoke();
             }
