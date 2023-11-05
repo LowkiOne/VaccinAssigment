@@ -1,220 +1,316 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using System.IO;
+using VaccinAssigment;
 
-namespace Vaccination
+public class Vaccin
 {
-    public class Program
+    private static bool running = true;
+    private static int vaccinAmount = 0;
+    private static bool ageLimit = false;
+    private static string ageDisplay = "Nej";
+
+    private static string inputCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Test.csv";
+    private static string outdataCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Vaccinations.csv";
+    public static void Main()
     {
-        private static bool running = true;
 
-        public static void Main()
+
+        while (running)
         {
-            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-            MainMenu();
-        }
-        
-        public static void VaccinAmount()
-        {
-            VaccinInputs vaccinInputs = new VaccinInputs();
+            Console.WriteLine("Huvudmeny\n");
+            Console.WriteLine($"Antal vaccindoser: {vaccinAmount}");
+            Console.WriteLine($"Åldersgräns 18 år: {ageDisplay}");
+            Console.WriteLine($"Indata: {inputCSVPath}");
+            Console.WriteLine($"Utdata: {outdataCSVPath}");
 
-            Console.Write("Ändra antalet vaccindoser: ");
-            int vaccinAmount = int.Parse(Console.ReadLine());
-
-            Console.Clear();
-
-            vaccinInputs.ChangeDoseAmount(vaccinAmount);
-            vaccinInputs.AgeLimitReturn();
-        }
-        public static void AgeLimit()
-        {
-            VaccinInputs vaccinInputs = new VaccinInputs();
-
-            int ageLimit = ShowOption("Ta bort åldergräns?");
-
-            Console.Clear();
-
-            vaccinInputs.ChangeAgeLimit(ageLimit);
-            vaccinInputs.AgeLimitReturn();
-        }
-        public static void PriorityOrder()
-        {
-            VaccinInputs vaccinInputs = new VaccinInputs();
-            FilterPerson personFilter = new FilterPerson();
-
-            personFilter.CreateVaccinationOrder(vaccinInputs.ReadCSVInputFile(), vaccinInputs.DosesAmount(), vaccinInputs.AgeLimitReturn());
-        }
-        public static void IndataChange()
-        {
-            VaccinInputs vaccinInput = new VaccinInputs();
-
-            while (true)
+            int option = ShowMenu("\nAlternativ", new[]
             {
-                Console.Write("Välj ny sökväg för Indata: ");
-                string changeFileInputPath = Console.ReadLine();
-
-                vaccinInput.IndataChange(changeFileInputPath);
-
-                if (File.Exists(vaccinInput.HandleFile()))
-                {
-                    break;
-                }
-                else
-                {
-                    Console.WriteLine("Filen exiterar inte, testa igen!");
-                }
-            }
-        }
-        public static void OutdataChange()
-        {
-            VaccinInputs vaccinInInput = new VaccinInputs();
-            FilterPerson vaccinFilters = new FilterPerson();
-            while (true)
-            {
-                Console.Write("Välj ny sökväg för Utdata: ");
-                string changeFileOutputPath = Console.ReadLine();
-
-                vaccinInInput.OutdataChange(changeFileOutputPath);
-                if(Directory.Exists(vaccinFilters.HandleOutFile()))
-                {
-                    Console.WriteLine($"Ny sökväg: {changeFileOutputPath}");
-                    if (!File.Exists(vaccinFilters.HandleOutFile()))
-                    {
-                        using (File.Create(vaccinFilters.HandleOutFile())) { }
-                    }
-                    break;
-                }
-                else
-                {
-                    Console.WriteLine("Mappen existerar inte, testa igen!");
-                }
-            }
-        }
-        public static void Exit()
-        {
-            running = false;
-        }
-
-        public static void MainMenu()
-        {
-            while (running)
-            {
-                VaccinInputs vaccinInputs = new VaccinInputs();
-
-                Console.WriteLine("Huvudmeny\n");
-                Console.WriteLine($"Antal vaccindoser: {vaccinInputs.DosesAmount()}");
-                Console.WriteLine($"Åldersgräns 18 år: {vaccinInputs.DisplayAgeLimit()}");
-                Console.WriteLine($"Indata: ");
-                Console.WriteLine($"Utdata: ");
-
-                int option = ShowMenu("\nAlternativ", new[]
-                {
                     "Ändra antal vaccindoser",
                     "Ändra åldersgräns",
                     "Skapa prioritetsordning",
                     "Ändra indata sökväg",
                     "Ändra utdata sökväg",
                     "Avsluta"
-                });
-                Console.Clear();
+            });
+            Console.Clear();
 
-                Action Navigate = option switch
-                {
-                    0 => new Action(VaccinAmount),
-                    1 => new Action(AgeLimit),
-                    2 => new Action(PriorityOrder),
-                    3 => new Action(IndataChange),
-                    4 => new Action(OutdataChange),
-                    5 => new Action(Exit),
-                };
-                Navigate.Invoke();
+            Action Navigate = option switch
+            {
+                0 => new Action(AddVaccinAmount),
+                1 => new Action(ChangeAgeLimit),
+                2 => new Action(CreatePriorityOrder),
+                3 => new Action(IndataFileSearchChange),
+                4 => new Action(OutDataFileSearchChange),
+                5 => new Action(Exit)
+            };
+            Navigate.Invoke();
+        }
+    }
+
+    public static void AddVaccinAmount()
+    {
+        while (true)
+        {
+            Console.Write("Ändra antalet vaccindoser: ");
+            string inputAmount = Console.ReadLine();
+
+            if (inputAmount != null && int.TryParse(inputAmount, out int result))
+            {
+                vaccinAmount += result;
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Skriv en hel siffra");
             }
         }
-        public static int ShowOption(string prompt)
-        {
-            List<string> option = new List<string>();
-            option.Add("Nej");
-            option.Add("Ja");
+    }
 
-            return ShowMenu(prompt, option);
+    public static void ChangeAgeLimit()
+    {
+        int option = ShowMenu("Ändra Åldersgräns", new[]
+        {
+            "Sätt åldersgräns",
+            "Ingen åldersgräns"
+        });
+        if (option == 1)
+        {
+            ageLimit = true;
+            ageDisplay = "Ja";
+            Console.WriteLine("Ändrad till vaccinera personer under 18 år");
         }
-        public static int ShowMenu(string prompt, IEnumerable<string> options)
+        else
         {
-            if (options == null || options.Count() == 0)
+            ageLimit = false;
+            ageDisplay = "Nej";
+            Console.WriteLine("Ändrad till vaccinera inte personer under 18 år");
+        }
+    }
+
+    public static void CreatePriorityOrder()
+    {
+        Functions functions = new Functions();
+        string[] input = File.ReadAllLines(inputCSVPath);
+
+        try
+        {
+            ErrorHandle(input);
+
+            string[] outPut = functions.CreateVaccinationOrder(input, vaccinAmount, ageLimit);
+
+            int totalDosesUsed = outPut
+            .Select(x => x.Split(','))
+            .Where(x => int.Parse(x[3]) > 0 && vaccinAmount > 1)
+            .Sum(x => int.Parse(x[3]));
+
+            vaccinAmount -= totalDosesUsed;
+
+            File.WriteAllLines(outdataCSVPath, outPut);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    public static void IndataFileSearchChange()
+    {
+        while (true)
+        {
+            Console.Write("Välj ny sökväg för Indata: ");
+            string changeFileInputPath = Console.ReadLine();
+
+            inputCSVPath = changeFileInputPath;
+
+            if (File.Exists(inputCSVPath))
             {
-                throw new ArgumentException("Cannot show a menu for an empty list of options.");
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Filen exiterar inte, testa igen!");
+            }
+        }
+    }
+
+    public static void OutDataFileSearchChange()
+    {
+        while (true)
+        {
+            Console.Write("Välj ny sökväg för Utdata: ");
+            string changeFileOutputPath = Console.ReadLine();
+
+            outdataCSVPath = changeFileOutputPath;
+
+            if (Directory.Exists(outdataCSVPath))
+            {
+                Console.WriteLine($"Ny sökväg: {changeFileOutputPath}");
+                if (!File.Exists(outdataCSVPath))
+                {
+                    using (File.Create(outdataCSVPath)) { }
+                }
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Mappen existerar inte, testa igen!");
+            }
+        }
+    }
+
+    private static void Exit()
+    {
+        running = false;
+    }
+
+    public static bool IsAllDigits(string input)
+    {
+        int counter = 0;
+
+        foreach (char c in input)
+        {
+            if (c == '-' && counter < 1)
+            {
+                counter++;
+            }
+            else if (!char.IsDigit(c))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static void ErrorHandle(string[] inputs)
+    {
+        foreach (string line in inputs)
+        {
+            string[] input = line.Split(',');
+
+            if (input.Length != 6)
+            {
+                throw new FormatException("För få värden som är separerade med ,");
             }
 
-            Console.WriteLine(prompt);
+            string personalNumberCheck = @"^\d{8}-\d{4}$|^\d{6}-\d{4}$|^\d{12}$|^\d{10}$";
 
-            // Hide the cursor that will blink after calling ReadKey.
-            Console.CursorVisible = false;
-
-            // Calculate the width of the widest option so we can make them all the same width later.
-            int width = options.Max(option => option.Length);
-
-            int selected = 0;
-            int top = Console.CursorTop;
-            for (int i = 0; i < options.Count(); i++)
+            if (!Regex.IsMatch(input[0], personalNumberCheck) || !IsAllDigits(input[0]) || input[0] == null)
             {
-                // Start by highlighting the first option.
-                if (i == 0)
-                {
-                    Console.BackgroundColor = ConsoleColor.Blue;
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-
-                var option = options.ElementAt(i);
-                // Pad every option to make them the same width, so the highlight is equally wide everywhere.
-                Console.WriteLine("- " + option.PadRight(width));
-
-                Console.ResetColor();
+                throw new FormatException($"Index 0.{input[0]} Felaktigt format på personummer. Accepterade format: YYYYMMDD-NNNN, YYMMDD-NNNN, YYYYMMDDNNNN, YYMMDDNNNN");
             }
-            Console.CursorLeft = 0;
-            Console.CursorTop = top - 1;
 
-            ConsoleKey? key = null;
-            while (key != ConsoleKey.Enter)
+            string names = "^[a-zA-ZåäöÅÄÖ]+$";
+
+            if (!Regex.IsMatch(input[1], names) || input[1] == null)
             {
-                key = Console.ReadKey(intercept: true).Key;
+                throw new FormatException("Index 1. Efternamnetamnet är felaktigt. Accepterade tecken: A-Ö, a-ö");
+            }
 
-                // First restore the previously selected option so it's not highlighted anymore.
-                Console.CursorTop = top + selected;
-                string oldOption = options.ElementAt(selected);
-                Console.Write("- " + oldOption.PadRight(width));
-                Console.CursorLeft = 0;
-                Console.ResetColor();
+            if (!Regex.IsMatch(input[2], names) || input[2] == null)
+            {
+                throw new FormatException("Index 2. Förnamnet är felaktig. Accepterade tecken: A-Ö, a-ö");
+            }
 
-                // Then find the new selected option.
-                if (key == ConsoleKey.DownArrow)
-                {
-                    selected = Math.Min(selected + 1, options.Count() - 1);
-                }
-                else if (key == ConsoleKey.UpArrow)
-                {
-                    selected = Math.Max(selected - 1, 0);
-                }
+            string value = "^[01]$";
 
-                // Finally highlight the new selected option.
-                Console.CursorTop = top + selected;
+            if (!Regex.IsMatch(input[3], value) || input[3] == null)
+            {
+                throw new FormatException("Index 3. Innehåller felaktigt värde. Accepterade värden: 0, 1");
+            }
+
+            if (!Regex.IsMatch(input[4], value) || input[4] == null)
+            {
+                throw new FormatException("Index 4. Innehåller felaktigt värde. Accepterade värden: 0, 1");
+            }
+
+            if (!Regex.IsMatch(input[5], value) || input[5] == null)
+            {
+                throw new FormatException("Index 5. Innehåller felaktigt värde. Accepterade värden: 0, 1");
+            }
+        }
+
+    }
+
+    public static int ShowMenu(string prompt, IEnumerable<string> options)
+    {
+        if (options == null || options.Count() == 0)
+        {
+            throw new ArgumentException("Cannot show a menu for an empty list of options.");
+        }
+
+        Console.WriteLine(prompt);
+
+        // Hide the cursor that will blink after calling ReadKey.
+        Console.CursorVisible = false;
+
+        // Calculate the width of the widest option so we can make them all the same width later.
+        int width = options.Max(option => option.Length);
+
+        int selected = 0;
+        int top = Console.CursorTop;
+        for (int i = 0; i < options.Count(); i++)
+        {
+            // Start by highlighting the first option.
+            if (i == 0)
+            {
                 Console.BackgroundColor = ConsoleColor.Blue;
                 Console.ForegroundColor = ConsoleColor.White;
-                string newOption = options.ElementAt(selected);
-                Console.Write("- " + newOption.PadRight(width));
-                Console.CursorLeft = 0;
-                // Place the cursor one step above the new selected option so that we can scroll and also see the option above.
-                Console.CursorTop = top + selected - 1;
-                Console.ResetColor();
             }
 
-            // Afterwards, place the cursor below the menu so we can see whatever comes next.
-            Console.CursorTop = top + options.Count();
+            var option = options.ElementAt(i);
+            // Pad every option to make them the same width, so the highlight is equally wide everywhere.
+            Console.WriteLine("- " + option.PadRight(width));
 
-            // Show the cursor again and return the selected option.
-            Console.CursorVisible = true;
-            return selected;
+            Console.ResetColor();
         }
+        Console.CursorLeft = 0;
+        Console.CursorTop = top - 1;
+
+        ConsoleKey? key = null;
+        while (key != ConsoleKey.Enter)
+        {
+            key = Console.ReadKey(intercept: true).Key;
+
+            // First restore the previously selected option so it's not highlighted anymore.
+            Console.CursorTop = top + selected;
+            string oldOption = options.ElementAt(selected);
+            Console.Write("- " + oldOption.PadRight(width));
+            Console.CursorLeft = 0;
+            Console.ResetColor();
+
+            // Then find the new selected option.
+            if (key == ConsoleKey.DownArrow)
+            {
+                selected = Math.Min(selected + 1, options.Count() - 1);
+            }
+            else if (key == ConsoleKey.UpArrow)
+            {
+                selected = Math.Max(selected - 1, 0);
+            }
+
+            // Finally highlight the new selected option.
+            Console.CursorTop = top + selected;
+            Console.BackgroundColor = ConsoleColor.Blue;
+            Console.ForegroundColor = ConsoleColor.White;
+            string newOption = options.ElementAt(selected);
+            Console.Write("- " + newOption.PadRight(width));
+            Console.CursorLeft = 0;
+            // Place the cursor one step above the new selected option so that we can scroll and also see the option above.
+            Console.CursorTop = top + selected - 1;
+            Console.ResetColor();
+        }
+
+        // Afterwards, place the cursor below the menu so we can see whatever comes next.
+        Console.CursorTop = top + options.Count();
+
+        // Show the cursor again and return the selected option.
+        Console.CursorVisible = true;
+        return selected;
     }
 }
