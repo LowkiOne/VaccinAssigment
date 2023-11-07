@@ -111,7 +111,29 @@ public class Vaccin
 
             vaccinAmount -= totalDosesUsed;
 
-            File.WriteAllLines(outdataCSVPath, outPut);
+            if (File.Exists(outdataCSVPath))
+            {
+                int option = ShowMenu("Vill du skriva över filen?", new[]
+                {
+                    "Ja",
+                    "Nej"
+                });
+                if (option == 0)
+                {
+                    File.WriteAllLines(outdataCSVPath, outPut);
+                    Console.WriteLine("Ordern är skapd");
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else
+            {
+                File.Create(outdataCSVPath);
+                File.WriteAllLines(outdataCSVPath, outPut);
+            }
+
         }
         catch (Exception ex)
         {
@@ -148,18 +170,19 @@ public class Vaccin
 
             outdataCSVPath = changeFileOutputPath;
 
-            if (Directory.Exists(outdataCSVPath))
+            if (!Directory.Exists(Path.GetDirectoryName(outdataCSVPath)))
             {
-                Console.WriteLine($"Ny sökväg: {changeFileOutputPath}");
-                if (!File.Exists(outdataCSVPath))
-                {
-                    using (File.Create(outdataCSVPath)) { }
-                }
-                break;
+                Console.WriteLine("Mappen existerar inte, testa igen!");
             }
             else
             {
-                Console.WriteLine("Mappen existerar inte, testa igen!");
+                if (!File.Exists(outdataCSVPath))
+                {
+                    File.Create(outdataCSVPath);
+                }
+                Console.WriteLine($"Ny sökväg: {changeFileOutputPath}");
+
+                break;
             }
         }
     }
@@ -189,53 +212,60 @@ public class Vaccin
 
     public static void ErrorHandle(string[] inputs)
     {
+        List<string> errorMessages = new List<string>();
+
         foreach (string line in inputs)
         {
             string[] input = line.Split(',');
 
             if (input.Length != 6)
             {
-                throw new FormatException("För få värden som är separerade med ,");
+                errorMessages.Add("För få värden som är separerade med ,");
             }
 
             string personalNumberCheck = @"^\d{8}-\d{4}$|^\d{6}-\d{4}$|^\d{12}$|^\d{10}$";
 
             if (!Regex.IsMatch(input[0], personalNumberCheck) || !IsAllDigits(input[0]) || input[0] == null)
             {
-                throw new FormatException($"Index 0.{input[0]} Felaktigt format på personummer. Accepterade format: YYYYMMDD-NNNN, YYMMDD-NNNN, YYYYMMDDNNNN, YYMMDDNNNN");
+                errorMessages.Add($"Index 0.{input[0]} Felaktigt format på personummer. Accepterade format: YYYYMMDD-NNNN, YYMMDD-NNNN, YYYYMMDDNNNN, YYMMDDNNNN");
             }
 
             string names = "^[a-zA-ZåäöÅÄÖ]+$";
 
             if (!Regex.IsMatch(input[1], names) || input[1] == null)
             {
-                throw new FormatException("Index 1. Efternamnetamnet är felaktigt. Accepterade tecken: A-Ö, a-ö");
+                errorMessages.Add("Index 1. Efternamnetamnet är felaktigt. Accepterade tecken: A-Ö, a-ö");
             }
 
             if (!Regex.IsMatch(input[2], names) || input[2] == null)
             {
-                throw new FormatException("Index 2. Förnamnet är felaktig. Accepterade tecken: A-Ö, a-ö");
+                errorMessages.Add("Index 2. Förnamnet är felaktig. Accepterade tecken: A-Ö, a-ö");
             }
 
             string value = "^[01]$";
 
             if (!Regex.IsMatch(input[3], value) || input[3] == null)
             {
-                throw new FormatException("Index 3. Innehåller felaktigt värde. Accepterade värden: 0, 1");
+                errorMessages.Add("Index 3. Innehåller felaktigt värde. Accepterade värden: 0, 1");
             }
 
             if (!Regex.IsMatch(input[4], value) || input[4] == null)
             {
-                throw new FormatException("Index 4. Innehåller felaktigt värde. Accepterade värden: 0, 1");
+                errorMessages.Add("Index 4. Innehåller felaktigt värde. Accepterade värden: 0, 1");
             }
 
             if (!Regex.IsMatch(input[5], value) || input[5] == null)
             {
-                throw new FormatException("Index 5. Innehåller felaktigt värde. Accepterade värden: 0, 1");
+                errorMessages.Add("Index 5. Innehåller felaktigt värde. Accepterade värden: 0, 1");
             }
         }
 
+        if (errorMessages.Count > 0)
+        {
+            throw new FormatException(string.Join(Environment.NewLine, errorMessages));
+        }
     }
+
 
     public static int ShowMenu(string prompt, IEnumerable<string> options)
     {

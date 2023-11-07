@@ -89,15 +89,24 @@ namespace VaccinAssigment
             int defaultVaccinDose = 2;
             List<VaccinPerson> vaccinPeople = new List<VaccinPerson>();
 
-            List<Person> FilterPersons = persons
-                .Where(x => !age && BirthDate(x.PersonalNumber) <= 18)
-                .OrderBy(x => x.PersonalNumber)
-                .ThenBy(x => x.HealthcareEmployee > 0)
-                .ThenBy(x => BirthDate(x.PersonalNumber) >= 65)
-                .ThenBy(x => x.RiskGroup > 0)
+            List<Person> filterPersons = persons
+                .Where(x => !age && BirthDate(x.PersonalNumber) >= 18)
+                .OrderBy(x => x.PersonalNumber).ToList();
+            List<Person> healthFilter = filterPersons
+                .Where(x => x.HealthcareEmployee > 0)
                 .ToList();
+            List<Person> pensionFilter = filterPersons
+                .Where(x => BirthDate(x.PersonalNumber) >= 65 && x.HealthcareEmployee < 1)
+                .ToList();
+            List<Person> riskGroupFilter = filterPersons
+                .Where(x => x.RiskGroup > 0 && BirthDate(x.PersonalNumber) < 65 && x.HealthcareEmployee < 1)
+                .ToList();
+            List<Person> otherFilter = filterPersons
+                .Where(x => BirthDate(x.PersonalNumber) < 65 && x.HealthcareEmployee < 1 && x.RiskGroup < 1)
+                .ToList();
+            List<Person> filterDone = healthFilter.Concat(pensionFilter).Concat(riskGroupFilter).Concat(otherFilter).ToList();
 
-            foreach (Person person in FilterPersons)
+            foreach (var person in filterDone)
             {
                 VaccinPerson ChangeForm = new VaccinPerson
                 {
