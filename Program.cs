@@ -18,8 +18,6 @@ public class Vaccin
     private static string outdataCSVPath = @"D:\2023\Progamering\C#\Inlamning4\NyaFiler\Vaccinations.csv";
     public static void Main()
     {
-
-
         while (running)
         {
 
@@ -103,13 +101,16 @@ public class Vaccin
             ErrorHandle(input);
 
             string[] outPut = functions.CreateVaccinationOrder(input, vaccinAmount, ageLimit);
-
-            int totalDosesUsed = outPut
-            .Select(x => x.Split(','))
-            .Where(x => int.Parse(x[3]) > 0 && vaccinAmount > 1)
-            .Sum(x => int.Parse(x[3]));
-
-            vaccinAmount -= totalDosesUsed;
+             
+            if(vaccinAmount >= functions.DosesUsed())
+            {
+                vaccinAmount -= functions.DosesUsed();
+            }
+            else
+            {
+                vaccinAmount -= vaccinAmount;
+                Console.WriteLine("");
+            }
 
             if (File.Exists(outdataCSVPath))
             {

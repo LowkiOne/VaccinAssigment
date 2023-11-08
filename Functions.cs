@@ -6,19 +6,62 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.IO;
 using Vaccination;
+using System.Runtime.CompilerServices;
 
 namespace VaccinAssigment
 {
     public class Functions
     {
+        private static List<VaccinPerson> vaccinPeople = new List<VaccinPerson>();
+        private static int dosesUsed = 0;
         public string[] CreateVaccinationOrder(string[] input, int doses, bool vaccinateChildren)
         {
-            string[] result = PersonsToList(input, doses, vaccinateChildren);
+            List<Person> persons = PersonsToList(input, vaccinateChildren);
+            CalculateDoses(doses);
+            var result = ListToCSV(persons);
 
             return result;
         }
 
-        private string[] PersonsToList(string[] input, int doses, bool ageLimit)
+        private void CalculateDoses(int doses)
+        {
+            int remaningdoses = doses;
+
+            for(int i = 0; i < vaccinPeople.Count; i++)
+            {
+                if (remaningdoses == 0)
+                    break;
+                if (vaccinPeople[i].VVaccinDoseTaken == 1 && vaccinPeople[i].VVaccinDoseNeeded == 2)
+                {
+                    remaningdoses--;
+                    vaccinPeople[i].VVaccinDoseTaken++;
+                    dosesUsed++;
+                }
+                else if (remaningdoses == 1)
+                {
+                    i = -1;
+                }
+                else
+                {
+                    remaningdoses--;
+                    vaccinPeople[i].VVaccinDoseTaken++;
+                    dosesUsed++;
+                }
+                
+            }
+        }
+        private string[] ListToCSV(List<Person> persons)
+        {
+            var personsToFile = vaccinPeople;
+
+            string[] csvLines =
+            personsToFile.Select(x =>
+            $"{x.VPersonalNumber},{x.VLastName},{x.VFirstName},{x.VVaccinDoseNeeded}")
+            .ToArray();
+
+            return csvLines;
+        }
+        private List<Person> PersonsToList(string[] input, bool age)
         {
             List<string> peopleToFilter = input.ToList();
             List<Person> personsToFilter = new List<Person>();
@@ -45,11 +88,13 @@ namespace VaccinAssigment
                 };
                 personsToFilter.Add(people);
             }
-            string[] result = ReformPersonalNumber(personsToFilter, doses, ageLimit);
+            var reformList = ReformPersonalNumber(personsToFilter, age);
+            var result = FilterPersons(reformList, age);
+
             return result;
         }
 
-        private string[] ReformPersonalNumber(List<Person> persons, int doses, bool age)
+        private List<Person> ReformPersonalNumber(List<Person> persons, bool age)
         {
             List<Person> updatePersonalNumber = new List<Person>();
 
@@ -81,17 +126,14 @@ namespace VaccinAssigment
                 };
                 updatePersonalNumber.Add(updatedPerson);
             }
-            string[] result = FilterPersons(updatePersonalNumber, age);
-            return result;
+            
+            return updatePersonalNumber;
         }
-        private string[] FilterPersons(List<Person> persons, bool age)
+        private List<Person> FilterPersons(List<Person> persons, bool age)
         {
             int defaultVaccinDose = 2;
-            List<VaccinPerson> vaccinPeople = new List<VaccinPerson>();
 
-            List<Person> filterPersons = persons
-                .Where(x => !age && BirthDate(x.PersonalNumber) >= 18)
-                .OrderBy(x => x.PersonalNumber).ToList();
+            List<Person> filterPersons = KidsFilter(persons, age);
             List<Person> healthFilter = filterPersons
                 .Where(x => x.HealthcareEmployee > 0)
                 .ToList();
@@ -105,7 +147,7 @@ namespace VaccinAssigment
                 .Where(x => BirthDate(x.PersonalNumber) < 65 && x.HealthcareEmployee < 1 && x.RiskGroup < 1)
                 .ToList();
             List<Person> filterDone = healthFilter.Concat(pensionFilter).Concat(riskGroupFilter).Concat(otherFilter).ToList();
-
+            //break out?
             foreach (var person in filterDone)
             {
                 VaccinPerson ChangeForm = new VaccinPerson
@@ -113,19 +155,31 @@ namespace VaccinAssigment
                     VPersonalNumber = person.PersonalNumber,
                     VLastName = person.LastName,
                     VFirstName = person.FirstName,
-                    VVaccinDose = defaultVaccinDose - person.Infection
+                    VVaccinDoseNeeded = defaultVaccinDose - person.Infection
                 };
                 vaccinPeople.Add(ChangeForm);
             }
 
-            var personsToFile = vaccinPeople;
+            return filterDone;
+        }
 
-            string[] csvLines =
-            personsToFile.Select(x =>
-            $"{x.VPersonalNumber}, {x.VLastName}, {x.VFirstName}, {x.VVaccinDose}")
-            .ToArray();
+        private List<Person> KidsFilter(List<Person> person, bool age)
+        {
+            List<Person> filterPersons = person
+                .OrderBy(x => x.PersonalNumber).ToList();
 
-            return csvLines;
+            if (!age)
+            {
+                 filterPersons = person
+                    .Where(x => BirthDate(x.PersonalNumber) >= 18)
+                    .OrderBy(x => x.PersonalNumber).ToList();
+            }
+            return filterPersons;
+        }
+
+        public int DosesUsed()
+        {
+            return dosesUsed;
         }
 
         private int BirthDate(string personalNumber)

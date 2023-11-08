@@ -20,6 +20,7 @@ namespace Vaccination
         public string VPersonalNumber { get; set; }
         public string VLastName { get; set; }
         public string VFirstName { get; set; }
-        public int VVaccinDose { get; set; }
+        public int VVaccinDoseNeeded { get; set; }
+        public int VVaccinDoseTaken { get; set; }
     }
 }
